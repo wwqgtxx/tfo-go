@@ -1,4 +1,4 @@
-module github.com/database64128/tfo-go/v2
+module github.com/metacubex/tfo-go
 
 go 1.22.0
 

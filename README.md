@@ -6,7 +6,7 @@
 `tfo-go` provides TCP Fast Open support for the `net` dialer and listener.
 
 ```bash
-go get github.com/database64128/tfo-go/v2
+go get github.com/metacubex/tfo-go
 ```
 
 ## License
