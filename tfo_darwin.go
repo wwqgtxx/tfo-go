@@ -32,7 +32,7 @@ func (lc *ListenConfig) listenTFO(ctx context.Context, network, address string) 
 		}
 
 		if err != nil {
-			if !lc.Fallback || !errors.Is(err, errors.ErrUnsupported) {
+			if !lc.Fallback || !errors.Is(err, ErrUnsupported) {
 				return wrapSyscallError("setsockopt(TCP_FASTOPEN_FORCE_ENABLE)", err)
 			}
 			runtimeListenNoTFO.Store(true)
@@ -60,7 +60,7 @@ func (lc *ListenConfig) listenTFO(ctx context.Context, network, address string) 
 
 	if err != nil {
 		ln.Close()
-		if !lc.Fallback || !errors.Is(err, errors.ErrUnsupported) {
+		if !lc.Fallback || !errors.Is(err, ErrUnsupported) {
 			return nil, wrapSyscallError("setsockopt(TCP_FASTOPEN)", err)
 		}
 		runtimeListenNoTFO.Store(true)
@@ -72,7 +72,7 @@ func (lc *ListenConfig) listenTFO(ctx context.Context, network, address string) 
 const AF_MULTIPATH = 39
 
 func (d *Dialer) socket(domain int) (fd int, err error) {
-	if d.MultipathTCP() {
+	if multipathTCP(d.Dialer) {
 		domain = AF_MULTIPATH
 	}
 	fd, err = unix.Socket(domain, unix.SOCK_STREAM, unix.IPPROTO_TCP)
@@ -89,7 +89,7 @@ func (d *Dialer) socket(domain int) (fd int, err error) {
 }
 
 func (d *Dialer) setIPv6Only(fd int, family int, ipv6only bool) error {
-	if d.MultipathTCP() {
+	if multipathTCP(d.Dialer) {
 		return nil
 	}
 	return setIPv6Only(fd, family, ipv6only)

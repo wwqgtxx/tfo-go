@@ -63,7 +63,7 @@ func (d *Dialer) dialTFO(ctx context.Context, network, address string, b []byte)
 		}
 
 		if err != nil {
-			if d.Fallback && errors.Is(err, errors.ErrUnsupported) {
+			if d.Fallback && errors.Is(err, ErrUnsupported) {
 				canFallback = true
 			}
 			return wrapSyscallError("setsockopt(TCP_FASTOPEN_CONNECT)", err)
