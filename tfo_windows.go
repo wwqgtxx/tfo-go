@@ -87,7 +87,8 @@ func (d *Dialer) dialSingle(ctx context.Context, network string, laddr, raddr *n
 	}
 
 	if ctrlCtxFn != nil {
-		if err = ctrlCtxFn(ctx, fd.ctrlNetwork(), raddr.String(), newRawConn(fd)); err != nil {
+		rawConn, _ := fd.SyscallConn()
+		if err = ctrlCtxFn(ctx, fd.ctrlNetwork(), raddr.String(), rawConn); err != nil {
 			fd.Close()
 			return nil, err
 		}

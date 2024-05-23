@@ -5,7 +5,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	_ "unsafe"
+	"unsafe"
 )
 
 //go:linkname sockaddrToTCP net.sockaddrToTCP
@@ -13,6 +13,9 @@ func sockaddrToTCP(sa syscall.Sockaddr) net.Addr
 
 //go:linkname execIO internal/poll.execIO
 func execIO(o *operation, submit func(o *operation) error) (int, error)
+
+//go:linkname fdInit internal/poll.(*FD).Init
+func fdInit(fd *pFD, net string, pollable bool) (string, error)
 
 // pFD is a file descriptor. The net and os packages embed this type in
 // a larger type representing a network connection or OS file.
@@ -86,70 +89,59 @@ type netFD struct {
 	raddr       net.Addr
 }
 
-//go:linkname newFD net.newFD
-func newFD(sysfd syscall.Handle, family, sotype int, net string) (*netFD, error)
-
-//go:linkname netFDInit net.(*netFD).init
-func netFDInit(fd *netFD) error
-
-//go:linkname netFDClose net.(*netFD).Close
-func netFDClose(fd *netFD) error
-
-//go:linkname netFDCtrlNetwork net.(*netFD).ctrlNetwork
-func netFDCtrlNetwork(fd *netFD) string
-
-//go:linkname netFDWrite net.(*netFD).Write
-func netFDWrite(fd *netFD, p []byte) (int, error)
-
-//go:linkname netFDSetWriteDeadline net.(*netFD).SetWriteDeadline
-func netFDSetWriteDeadline(fd *netFD, t time.Time) error
-
-func (fd *netFD) init() error {
-	return netFDInit(fd)
+func newFD(sysfd syscall.Handle, family, sotype int, net string) (*netFD, error) {
+	ret := &netFD{
+		pfd: pFD{
+			Sysfd:         sysfd,
+			IsStream:      sotype == syscall.SOCK_STREAM,
+			ZeroReadIsEOF: sotype != syscall.SOCK_DGRAM && sotype != syscall.SOCK_RAW,
+		},
+		family: family,
+		sotype: sotype,
+		net:    net,
+	}
+	return ret, nil
 }
 
-func (fd *netFD) Close() error {
-	return netFDClose(fd)
+func netFDClose(fd *netFD) error {
+	return (*net.TCPConn)(unsafe.Pointer(&fd)).Close()
+}
+
+func (fd *netFD) init() error {
+	errcall, err := fdInit(&fd.pfd, fd.net, true)
+	if errcall != "" {
+		err = wrapSyscallError(errcall, err)
+	}
+	return err
 }
 
 func (fd *netFD) ctrlNetwork() string {
-	return netFDCtrlNetwork(fd)
+	switch fd.net {
+	case "unix", "unixgram", "unixpacket":
+		return fd.net
+	}
+	switch fd.net[len(fd.net)-1] {
+	case '4', '6':
+		return fd.net
+	}
+	if fd.family == syscall.AF_INET {
+		return fd.net + "4"
+	}
+	return fd.net + "6"
+}
+
+func (fd *netFD) Close() error {
+	return (*net.TCPConn)(unsafe.Pointer(&fd)).Close()
 }
 
 func (fd *netFD) Write(p []byte) (int, error) {
-	return netFDWrite(fd, p)
+	return (*net.TCPConn)(unsafe.Pointer(&fd)).Write(p)
 }
 
 func (fd *netFD) SetWriteDeadline(t time.Time) error {
-	return netFDSetWriteDeadline(fd, t)
+	return (*net.TCPConn)(unsafe.Pointer(&fd)).SetWriteDeadline(t)
 }
 
-// Copied from src/net/rawconn.go
-type rawConn struct {
-	fd *netFD
-}
-
-func newRawConn(fd *netFD) *rawConn {
-	return &rawConn{fd: fd}
-}
-
-//go:linkname rawConnControl net.(*rawConn).Control
-func rawConnControl(c *rawConn, f func(uintptr)) error
-
-//go:linkname rawConnRead net.(*rawConn).Read
-func rawConnRead(c *rawConn, f func(uintptr) bool) error
-
-//go:linkname rawConnWrite net.(*rawConn).Write
-func rawConnWrite(c *rawConn, f func(uintptr) bool) error
-
-func (c *rawConn) Control(f func(uintptr)) error {
-	return rawConnControl(c, f)
-}
-
-func (c *rawConn) Read(f func(uintptr) bool) error {
-	return rawConnRead(c, f)
-}
-
-func (c *rawConn) Write(f func(uintptr) bool) error {
-	return rawConnWrite(c, f)
+func (fd *netFD) SyscallConn() (syscall.RawConn, error) {
+	return (*net.TCPConn)(unsafe.Pointer(&fd)).SyscallConn()
 }
