@@ -2,20 +2,23 @@ package tfo
 
 import (
 	"net"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
 	"unsafe"
 )
 
-//go:linkname sockaddrToTCP net.sockaddrToTCP
-func sockaddrToTCP(sa syscall.Sockaddr) net.Addr
-
-//go:linkname execIO internal/poll.execIO
-func execIO(o *operation, submit func(o *operation) error) (int, error)
-
-//go:linkname fdInit internal/poll.(*FD).Init
-func fdInit(fd *pFD, net string, pollable bool) (string, error)
+// Copied from src/net/tcpsock_posix.go
+func sockaddrToTCP(sa syscall.Sockaddr) net.Addr {
+	switch sa := sa.(type) {
+	case *syscall.SockaddrInet4:
+		return &net.TCPAddr{IP: sa.Addr[0:], Port: sa.Port}
+	case *syscall.SockaddrInet6:
+		return &net.TCPAddr{IP: sa.Addr[0:], Port: sa.Port, Zone: strconv.Itoa(int(sa.ZoneId))}
+	}
+	return nil
+}
 
 // pFD is a file descriptor. The net and os packages embed this type in
 // a larger type representing a network connection or OS file.
@@ -35,7 +38,7 @@ type pFD struct {
 	wop operation
 
 	// I/O poller.
-	pd uintptr
+	pd pollDesc
 
 	// Used to implement pread/pwrite.
 	l sync.Mutex
@@ -63,7 +66,7 @@ type pFD struct {
 	isFile bool
 
 	// The kind of this file.
-	kind byte
+	kind fileKind
 }
 
 func (fd *pFD) ConnectEx(ra syscall.Sockaddr, b []byte) (n int, err error) {
@@ -108,7 +111,7 @@ func netFDClose(fd *netFD) error {
 }
 
 func (fd *netFD) init() error {
-	errcall, err := fdInit(&fd.pfd, fd.net, true)
+	errcall, err := fd.pfd.Init(fd.net, true)
 	if errcall != "" {
 		err = wrapSyscallError(errcall, err)
 	}
