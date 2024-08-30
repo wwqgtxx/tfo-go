@@ -15,7 +15,11 @@ func sockaddrToTCP(sa syscall.Sockaddr) net.Addr {
 	case *syscall.SockaddrInet4:
 		return &net.TCPAddr{IP: sa.Addr[0:], Port: sa.Port}
 	case *syscall.SockaddrInet6:
-		return &net.TCPAddr{IP: sa.Addr[0:], Port: sa.Port, Zone: strconv.Itoa(int(sa.ZoneId))}
+		zone := ""
+		if sa.ZoneId != 0 {
+			zone = strconv.Itoa(int(sa.ZoneId))
+		}
+		return &net.TCPAddr{IP: sa.Addr[0:], Port: sa.Port, Zone: zone}
 	}
 	return nil
 }
