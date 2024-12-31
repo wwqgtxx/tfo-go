@@ -575,7 +575,7 @@ func PthreadFchdir(fd int) (err error) {
 //   - dstAddr is the destination address.
 //
 // On success, Connectx returns the number of bytes enqueued for transmission.
-func Connectx(fd int, srcIf uint32, srcAddr, dstAddr Sockaddr, associd SaeAssocID, flags uint32, iov []Iovec, connid *SaeConnID) (n uintptr, err error) {
+func Connectx(fd int, srcIf uint32, srcAddr, dstAddr Sockaddr, associd SaeAssocID, flags uint32, iov []Iovec, n *uintptr, connid *SaeConnID) (err error) {
 	endpoints := SaEndpoints{
 		Srcif: srcIf,
 	}
@@ -583,7 +583,7 @@ func Connectx(fd int, srcIf uint32, srcAddr, dstAddr Sockaddr, associd SaeAssocI
 	if srcAddr != nil {
 		addrp, addrlen, err := srcAddr.sockaddr()
 		if err != nil {
-			return 0, err
+			return err
 		}
 		endpoints.Srcaddr = (*RawSockaddr)(addrp)
 		endpoints.Srcaddrlen = uint32(addrlen)
@@ -592,13 +592,13 @@ func Connectx(fd int, srcIf uint32, srcAddr, dstAddr Sockaddr, associd SaeAssocI
 	if dstAddr != nil {
 		addrp, addrlen, err := dstAddr.sockaddr()
 		if err != nil {
-			return 0, err
+			return err
 		}
 		endpoints.Dstaddr = (*RawSockaddr)(addrp)
 		endpoints.Dstaddrlen = uint32(addrlen)
 	}
 
-	err = connectx(fd, &endpoints, associd, flags, iov, &n, connid)
+	err = connectx(fd, &endpoints, associd, flags, iov, n, connid)
 	return
 }
 
