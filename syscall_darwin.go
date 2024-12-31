@@ -87,7 +87,7 @@ func (sa *sockaddrInet6) sockaddr() (unsafe.Pointer, uint32, error) {
 }
 
 type sa_endpoints_t struct {
-	sae_srcif      uint
+	sae_srcif      uint32
 	sae_srcaddr    unsafe.Pointer
 	sae_srcaddrlen uint32
 	sae_dstaddr    unsafe.Pointer
@@ -104,7 +104,7 @@ const (
 
 // Connectx enables TFO if a non-empty buf is passed.
 // If an empty buf is passed, TFO is not enabled.
-func Connectx(s int, srcif uint, from syscall.Sockaddr, to syscall.Sockaddr, buf []byte) (uint, error) {
+func Connectx(s int, srcif uint32, from syscall.Sockaddr, to syscall.Sockaddr, buf []byte) (uint, error) {
 	from_ptr, from_n, err := sockaddrp(from)
 	if err != nil {
 		return 0, err
