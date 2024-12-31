@@ -92,6 +92,7 @@ type sa_endpoints_t struct {
 	sae_srcaddrlen uint32
 	sae_dstaddr    unsafe.Pointer
 	sae_dstaddrlen uint32
+	_              [4]byte
 }
 
 const (
