@@ -848,7 +848,7 @@ func connectx(fd int, endpoints *SaEndpoints, associd SaeAssocID, flags uint32, 
 	} else {
 		_p0 = unsafe.Pointer(&_zero)
 	}
-	_, _, e1 := syscall_syscall9(libc_connectx_trampoline_addr, uintptr(fd), uintptr(unsafe.Pointer(endpoints)), uintptr(associd), uintptr(flags), uintptr(_p0), uintptr(len(iov)), uintptr(unsafe.Pointer(n)), uintptr(unsafe.Pointer(connid)), 0)
+	_, _, e1 := Syscall9(SYS_CONNECTX, uintptr(fd), uintptr(unsafe.Pointer(endpoints)), uintptr(associd), uintptr(flags), uintptr(_p0), uintptr(len(iov)), uintptr(unsafe.Pointer(n)), uintptr(unsafe.Pointer(connid)), 0)
 	if e1 != 0 {
 		err = errnoErr(e1)
 	}
