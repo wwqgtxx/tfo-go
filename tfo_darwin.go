@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"runtime"
 	"syscall"
 
 	"golang.org/x/sys/unix"
@@ -106,6 +107,7 @@ const setTFODialerFromSocketSockoptName = "TCP_FASTOPEN_FORCE_ENABLE"
 const connectSyscallName = "connectx"
 
 func doConnect(fd uintptr, rsa unix.Sockaddr, b []byte) (int, error) {
+	defer runtime.KeepAlive(b)
 	var (
 		flags uint32
 		iov   []unix.Iovec
