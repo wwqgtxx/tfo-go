@@ -164,12 +164,14 @@ func unixSockaddrFromTCPAddr(a *net.TCPAddr, family int) (unix.Sockaddr, error) 
 func connect(rawConn syscall.RawConn, rsa unix.Sockaddr, b []byte) (n int, canFallback bool, err error) {
 	var done bool
 
+	var _n uintptr
+
 	if perr := rawConn.Write(func(fd uintptr) bool {
 		if done {
 			return true
 		}
 
-		n, err = doConnect(fd, rsa, b)
+		err = doConnect(fd, rsa, b, &_n)
 		if err == unix.EINPROGRESS {
 			done = true
 			err = nil
@@ -189,6 +191,8 @@ func connect(rawConn syscall.RawConn, rsa unix.Sockaddr, b []byte) (n int, canFa
 	}); perr != nil {
 		return 0, false, perr
 	}
+
+	n = int(_n)
 
 	return
 }

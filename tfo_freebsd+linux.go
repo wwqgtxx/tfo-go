@@ -16,6 +16,8 @@ func (*Dialer) setIPv6Only(fd int, family int, ipv6only bool) error {
 
 const connectSyscallName = "sendmsg"
 
-func doConnect(fd uintptr, rsa unix.Sockaddr, b []byte) (int, error) {
-	return unix.SendmsgN(int(fd), b, nil, rsa, sendtoImplicitConnectFlag|unix.MSG_NOSIGNAL)
+func doConnect(fd uintptr, rsa unix.Sockaddr, b []byte, n *uintptr) error {
+	_n, err := unix.SendmsgN(int(fd), b, nil, rsa, sendtoImplicitConnectFlag|unix.MSG_NOSIGNAL)
+	*n = uintptr(_n)
+	return err
 }
