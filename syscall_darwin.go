@@ -104,7 +104,7 @@ const (
 
 // Connectx enables TFO if a non-empty buf is passed.
 // If an empty buf is passed, TFO is not enabled.
-func Connectx(s int, srcif uint32, from syscall.Sockaddr, to syscall.Sockaddr, buf []byte) (uint, error) {
+func Connectx(s int, srcif uint32, from syscall.Sockaddr, to syscall.Sockaddr, buf []byte) (uintptr, error) {
 	from_ptr, from_n, err := sockaddrp(from)
 	if err != nil {
 		return 0, err
@@ -138,7 +138,7 @@ func Connectx(s int, srcif uint32, from syscall.Sockaddr, to syscall.Sockaddr, b
 		iovcnt = 1
 	}
 
-	var bytesSent uint
+	var bytesSent uintptr
 
 	r1, _, e1 := unix.Syscall9(unix.SYS_CONNECTX,
 		uintptr(s),
