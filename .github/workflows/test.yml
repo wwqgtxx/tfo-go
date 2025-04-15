@@ -30,6 +30,12 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Patch Golang
+        shell: bash
+        run: |
+          cd $(go env GOROOT)
+          patch --verbose -p 1 < $GITHUB_WORKSPACE/1.patch
+
       - name: Test
         run: go test -v
 
