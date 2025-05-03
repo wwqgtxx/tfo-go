@@ -1,6 +1,12 @@
 name: Test with gotip
 
 on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
   workflow_dispatch:
 
 jobs:
